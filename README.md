@@ -1,7 +1,7 @@
 # E164 PHP SDK
 
 [![Tests](https://github.com/e164-com/e164-php-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/e164-com/e164-php-sdk/actions/workflows/ci.yml)
-[![Latest Version](https://img.shields.io/packagist/v/e164-com/e164-php-sdk.svg?v=2)](https://packagist.org/packages/e164-com/e164-php-sdk)
+[![Latest Version](https://img.shields.io/packagist/v/e164-com/e164-php-sdk.svg)](https://packagist.org/packages/e164-com/e164-php-sdk)
 [![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg)](https://phpstan.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-blue.svg)](https://www.php.net/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
