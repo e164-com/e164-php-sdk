@@ -1,0 +1,40 @@
+{
+  "name": "e164-com/e164-php-sdk",
+  "description": "A PHP SDK for interacting with the e164.com API.",
+  "type": "library",
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.9"
+  },
+  "autoload": {
+    "psr-4": {
+      "Vendor\\E164\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Vendor\\E164\\Tests\\": "tests/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5",
+    "phpstan/phpstan": "^1.12"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Catalin Dragos",
+      "email": "catalin.dragos@e164.com"
+    }
+  ],
+  "homepage": "https://github.com/e164-com/e164-php-sdk",
+  "keywords": [
+    "e164",
+    "e164 SDK",
+    "phone number validation",
+    "phone number validation SDK",
+    "API wrapper"
+  ]
+}
