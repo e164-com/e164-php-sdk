@@ -13,18 +13,28 @@ class E164
     private const USER_AGENT = 'e164-php-sdk/1.0';
 
     private ClientInterface $client;
+    private ?string $apiKey;
 
     /**
      * @param ClientInterface|null $client Optional Guzzle client instance.
+     * @param string|null $apiKey Optional API key for authenticated requests.
      */
-    public function __construct(?ClientInterface $client = null)
+    public function __construct(?ClientInterface $client = null, ?string $apiKey = null)
     {
+        $this->apiKey = $apiKey;
+
+        $headers = [
+            'User-Agent' => self::USER_AGENT,
+            'Referer' => self::API_BASE_URL,
+        ];
+
+        if ($this->apiKey !== null) {
+            $headers['X-API-Key'] = $this->apiKey;
+        }
+
         $this->client = $client ?? new Client([
             'base_uri' => self::API_BASE_URL,
-            'headers' => [
-                'User-Agent' => self::USER_AGENT,
-                'Referer' => self::API_BASE_URL,
-            ],
+            'headers' => $headers,
         ]);
     }
 

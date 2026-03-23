@@ -33,6 +33,17 @@ echo $result->getIso3();            // "GBR"
 echo $result->getOperatorBrand();   // "BT"
 ```
 
+## Authentication (Optional)
+
+The E164 API works without authentication, but if you have an API key you can pass it as the second parameter:
+
+```php
+$e164 = new E164(null, 'your-api-key');
+$result = $e164->lookup('441133910781');
+```
+
+This sends the key as an `X-API-Key` header with every request.
+
 ## Working with Results
 
 ```php

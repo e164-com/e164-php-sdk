@@ -176,4 +176,18 @@ class E164Test extends TestCase
 
         $this->assertInstanceOf(E164::class, $e164);
     }
+
+    public function testConstructorAcceptsApiKey(): void
+    {
+        $e164 = new E164(null, 'test-api-key');
+
+        $this->assertInstanceOf(E164::class, $e164);
+    }
+
+    public function testConstructorWorksWithoutApiKey(): void
+    {
+        $e164 = new E164();
+
+        $this->assertInstanceOf(E164::class, $e164);
+    }
 }
