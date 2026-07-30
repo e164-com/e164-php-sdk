@@ -2,33 +2,7 @@
   "name": "e164-com/e164-php-sdk",
   "description": "A PHP SDK for interacting with the e164.com API.",
   "type": "library",
-  "require": {
-    "php": "^8.1",
-    "guzzlehttp/guzzle": "^7.9"
-  },
-  "autoload": {
-    "psr-4": {
-      "Vendor\\E164\\": "src/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Vendor\\E164\\Tests\\": "tests/"
-    }
-  },
-  "require-dev": {
-    "phpunit/phpunit": "^10.5",
-    "phpstan/phpstan": "^1.12"
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true,
   "license": "MIT",
-  "authors": [
-    {
-      "name": "Catalin Dragos",
-      "email": "catalin.dragos@e164.com"
-    }
-  ],
   "homepage": "https://github.com/e164-com/e164-php-sdk",
   "keywords": [
     "e164",
@@ -36,5 +10,59 @@
     "phone number validation",
     "phone number validation SDK",
     "API wrapper"
-  ]
+  ],
+  "authors": [
+    {
+      "name": "Catalin Dragos",
+      "email": "catalin.dragos@e164.com"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/e164-com/e164-php-sdk/issues",
+    "source": "https://github.com/e164-com/e164-php-sdk"
+  },
+  "require": {
+    "php": "^8.1",
+    "ext-json": "*",
+    "composer-runtime-api": "^2.0",
+    "guzzlehttp/guzzle": "^7.9",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-message": "^1.1 || ^2.0"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "E164\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "E164\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "stan": "phpstan analyse",
+    "check": [
+      "@stan",
+      "@test"
+    ]
+  },
+  "scripts-descriptions": {
+    "test": "Run the PHPUnit test suite.",
+    "stan": "Run PHPStan static analysis.",
+    "check": "Run static analysis followed by the test suite."
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "phpstan/extension-installer": false
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
