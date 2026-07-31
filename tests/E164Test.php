@@ -405,6 +405,51 @@ final class E164Test extends TestCase
         }
     }
 
+    public function testLeadingZeroIsReportedBeforeTheLengthLimit(): void
+    {
+        // '00' plus a valid 14-digit number is 16 digits. Reporting the length
+        // first named the wrong fix: dropping the access code leaves a number
+        // that is well within the limit.
+        $client = $this->createMock(ClientInterface::class);
+        $client->expects($this->never())->method('sendRequest');
+
+        $sdk = new E164($client);
+
+        $this->expectException(InvalidPhoneNumberException::class);
+        $this->expectExceptionMessage('country codes never start with 0');
+
+        $sdk->lookup('0012345678901234');
+    }
+
+    public function testTheReplacementSuggestedForALeadingZeroIsItselfAcceptable(): void
+    {
+        // Regression: the message suggested '+44113910781' -- a digit short of
+        // the real number -- so a caller who followed the advice hit a second
+        // error, which is the confusion this guard exists to remove.
+        $sdk = new E164($this->mockClient($this->jsonResponse(self::LIVE_PAYLOAD)));
+
+        $suggestion = null;
+
+        try {
+            $sdk->lookup('00441133910781');
+            $this->fail('Expected InvalidPhoneNumberException');
+        } catch (InvalidPhoneNumberException $e) {
+            if (preg_match("/should be '(\+?\d+)'/", $e->getMessage(), $matches) === 1) {
+                $suggestion = $matches[1];
+            }
+        }
+
+        $this->assertNotNull($suggestion, 'The message must suggest a replacement number.');
+        $this->assertSame(
+            '441133910781',
+            preg_replace('/\D+/', '', $suggestion),
+            'The suggested replacement must be the number the docs use as the worked example.',
+        );
+
+        // Following the advice must produce a lookup, not another exception.
+        $this->assertInstanceOf(LookupResult::class, $sdk->lookup($suggestion));
+    }
+
     // --- Failure mapping -------------------------------------------------
 
     public function testMalformedJsonIsAnApiFailureNotAnInvalidNumber(): void
