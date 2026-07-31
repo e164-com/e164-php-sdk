@@ -20,7 +20,7 @@ final class LookupResult implements JsonSerializable
      */
     public function __construct(
         private readonly ?string $prefix = null,
-        private readonly ?string $callingCode = null,
+        private readonly ?int $callingCode = null,
         private readonly ?string $iso3 = null,
         private readonly ?string $tadig = null,
         private readonly ?string $mccmnc = null,
@@ -50,7 +50,7 @@ final class LookupResult implements JsonSerializable
     {
         return new self(
             prefix: self::readString($data, 'prefix'),
-            callingCode: self::readString($data, 'calling_code'),
+            callingCode: self::readInt($data, 'calling_code'),
             iso3: self::readString($data, 'iso3'),
             tadig: self::readString($data, 'tadig'),
             mccmnc: self::readString($data, 'mccmnc'),
@@ -75,9 +75,13 @@ final class LookupResult implements JsonSerializable
     }
 
     /**
-     * Country calling code, e.g. "44".
+     * Country calling code, e.g. 44.
+     *
+     * The API sends this as a JSON number, and toArray()/jsonSerialize() have
+     * always reported it as one. Returning a string here made a single field
+     * read as two different types off the same object.
      */
-    public function getCallingCode(): ?string
+    public function getCallingCode(): ?int
     {
         return $this->callingCode;
     }
