@@ -29,7 +29,7 @@ $e164 = new E164();
 $result = $e164->lookup('441133910781');
 
 echo $result->getType();            // "GEOGRAPHIC"
-echo $result->getCallingCode();     // "44"
+echo $result->getCallingCode();     // 44
 echo $result->getIso3();            // "GBR"
 echo $result->getOperatorBrand();   // "BT"
 ```
@@ -53,7 +53,7 @@ $result = $e164->lookup('441133910781');
 
 // Number identification
 $result->getPrefix();          // "44113391"
-$result->getCallingCode();     // "44"
+$result->getCallingCode();     // 44 (int)
 $result->getIso3();            // "GBR"
 $result->getType();            // "GEOGRAPHIC"
 $result->getLocation();        // Location if available, else null
@@ -87,6 +87,9 @@ foreach ($e164->lookupAll('12124567890') as $match) {
 }
 ```
 
+`lookupAll()` never returns an empty array — like `lookup()`, it throws
+`NumberNotFoundException` when the API holds no record for the number.
+
 ### Raw payload access
 
 The decoded API record stays reachable, so fields added to the API after this SDK
@@ -112,6 +115,15 @@ $e164->lookup('+44 (113) 391 0781');
 
 Input with no digits at all, or with more than the 15 digits E.164 permits, is
 rejected without an API call.
+
+So is a number beginning with `0`. Country calling codes run from 1 to 999 and
+never start with one, so a number still carrying a national trunk prefix or an
+international access code is not in E.164 form — strip it before calling:
+
+```php
+$e164->lookup('0044113910781');   // InvalidPhoneNumberException
+$e164->lookup('+44113910781');    // correct
+```
 
 ## Custom HTTP Client
 
@@ -145,12 +157,16 @@ $e164 = new E164(
 use E164\Exception\ApiException;
 use E164\Exception\AuthenticationException;
 use E164\Exception\InvalidPhoneNumberException;
+use E164\Exception\NumberNotFoundException;
 use E164\Exception\RateLimitException;
 
 try {
     $result = $e164->lookup('441133910781');
+} catch (NumberNotFoundException $e) {
+    // Well-formed number, but the API holds no record for it.
+    // $e->getPhoneNumber() returns the normalised digits that were looked up.
 } catch (InvalidPhoneNumberException $e) {
-    // No digits in the input, over 15 digits, or the API holds no record.
+    // Not a usable number: no digits, over 15 digits, or starts with 0.
 } catch (AuthenticationException $e) {
     // API key missing or rejected (HTTP 401/403).
 } catch (RateLimitException $e) {
@@ -160,6 +176,11 @@ try {
     $e->getStatusCode(); // HTTP status, or null if the request never got a response
 }
 ```
+
+Order matters: `NumberNotFoundException` extends `InvalidPhoneNumberException`, so it
+must be caught first if you want to treat the two differently. Catching only
+`InvalidPhoneNumberException` still covers both — which is what 3.0 did, when a missing
+record and malformed input were the same exception.
 
 `AuthenticationException` and `RateLimitException` both extend `ApiException`, so
 catching `ApiException` alone covers every API-side failure. Every exception the SDK

@@ -8,6 +8,7 @@ use Composer\InstalledVersions;
 use E164\Exception\ApiException;
 use E164\Exception\AuthenticationException;
 use E164\Exception\InvalidPhoneNumberException;
+use E164\Exception\NumberNotFoundException;
 use E164\Exception\RateLimitException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\HttpFactory;
@@ -74,7 +75,9 @@ final class E164
      *                       a digit is discarded, so "+44 113 391 0781" and
      *                       "441133910781" are equivalent.
      *
-     * @throws InvalidPhoneNumberException When the number holds no digits, exceeds 15 digits, or has no record.
+     * @throws InvalidPhoneNumberException When the number holds no digits, exceeds 15 digits, or starts with 0.
+     * @throws NumberNotFoundException     When the number is well-formed but the API holds no record for it.
+     *                                     Extends InvalidPhoneNumberException, which is what 3.0 threw here.
      * @throws AuthenticationException     When the API rejects the API key.
      * @throws RateLimitException          When the caller is being rate limited.
      * @throws ApiException                When the request fails or the response cannot be parsed.
@@ -89,7 +92,9 @@ final class E164
      *
      * @return non-empty-list<LookupResult>
      *
-     * @throws InvalidPhoneNumberException When the number holds no digits, exceeds 15 digits, or has no record.
+     * @throws InvalidPhoneNumberException When the number holds no digits, exceeds 15 digits, or starts with 0.
+     * @throws NumberNotFoundException     When the number is well-formed but the API holds no record for it.
+     *                                     Extends InvalidPhoneNumberException, which is what 3.0 threw here.
      * @throws AuthenticationException     When the API rejects the API key.
      * @throws RateLimitException          When the caller is being rate limited.
      * @throws ApiException                When the request fails or the response cannot be parsed.
@@ -102,7 +107,7 @@ final class E164
         $records = $this->decode($response, $digits);
 
         if ($records === []) {
-            throw new InvalidPhoneNumberException("Invalid phone number: $digits");
+            throw new NumberNotFoundException($digits);
         }
 
         return array_map(
@@ -131,6 +136,19 @@ final class E164
                 strlen($digits),
                 self::MAX_DIGITS,
             ));
+        }
+
+        // E.164 country codes run from 1 to 999, so a number that still carries a
+        // national trunk prefix or an international access code cannot be in E.164
+        // form. Left to the API it comes back with no records, which would surface
+        // as "no record found" and send the caller hunting for missing data rather
+        // than fixing the number they passed.
+        if (str_starts_with($digits, '0')) {
+            throw new InvalidPhoneNumberException(
+                'Invalid phone number: country codes never start with 0. Drop the '
+                . 'national trunk prefix or international access code '
+                . "(e.g. '0044113910781' should be '+44113910781')",
+            );
         }
 
         return $digits;
@@ -221,7 +239,7 @@ final class E164
             ),
             // The API signals "no record" with 200 and an empty array; a 404 is
             // treated the same way defensively.
-            $status === 404 => new InvalidPhoneNumberException("Invalid phone number: $digits"),
+            $status === 404 => new NumberNotFoundException($digits),
             default => new ApiException(
                 "The e164.com API returned an unexpected HTTP $status response.",
                 $status,

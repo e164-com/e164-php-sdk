@@ -47,7 +47,7 @@ final class LookupResultTest extends TestCase
             'weight' => 11,
         ]);
 
-        $this->assertSame('44', $result->getCallingCode());
+        $this->assertSame(44, $result->getCallingCode());
         $this->assertSame(12, $result->getTotalLengthMin());
         $this->assertSame(11, $result->getWeight());
     }
@@ -55,14 +55,31 @@ final class LookupResultTest extends TestCase
     public function testNumericStringsAreAcceptedForIntegerFields(): void
     {
         $result = LookupResult::fromArray([
+            'calling_code' => '44',
             'total_length_min' => '12',
             'total_length_max' => '14',
             'weight' => '11',
         ]);
 
+        $this->assertSame(44, $result->getCallingCode());
         $this->assertSame(12, $result->getTotalLengthMin());
         $this->assertSame(14, $result->getTotalLengthMax());
         $this->assertSame(11, $result->getWeight());
+    }
+
+    public function testCallingCodeGetterAgreesWithTheRawPayload(): void
+    {
+        // Regression: getCallingCode() returned '44' while toArray() and
+        // jsonSerialize() reported 44, so one field read as two types.
+        $result = LookupResult::fromArray(['calling_code' => 44]);
+
+        $this->assertSame(44, $result->getCallingCode());
+        $this->assertSame(44, $result->get('calling_code'));
+        $this->assertSame(44, $result->toArray()['calling_code']);
+        $this->assertJsonStringEqualsJsonString(
+            '{"calling_code":44}',
+            (string) json_encode($result),
+        );
     }
 
     public function testNonNumericStringForAnIntegerFieldIsNullNotZero(): void

@@ -9,6 +9,7 @@ use E164\Exception\ApiException;
 use E164\Exception\AuthenticationException;
 use E164\Exception\E164Exception;
 use E164\Exception\InvalidPhoneNumberException;
+use E164\Exception\NumberNotFoundException;
 use E164\Exception\RateLimitException;
 use E164\LookupResult;
 use GuzzleHttp\Client;
@@ -88,7 +89,7 @@ final class E164Test extends TestCase
 
         $this->assertInstanceOf(LookupResult::class, $result);
         $this->assertSame('44113391', $result->getPrefix());
-        $this->assertSame('44', $result->getCallingCode());
+        $this->assertSame(44, $result->getCallingCode());
         $this->assertSame('GBR', $result->getIso3());
         $this->assertNull($result->getTadig());
         $this->assertNull($result->getMccmnc());
@@ -298,20 +299,110 @@ final class E164Test extends TestCase
     {
         $sdk = new E164($this->mockClient($this->jsonResponse([])));
 
-        $this->expectException(InvalidPhoneNumberException::class);
-        $this->expectExceptionMessage('Invalid phone number: 00000000000');
+        $this->expectException(NumberNotFoundException::class);
+        $this->expectExceptionMessage('No record found for phone number: 999999999999');
 
-        $sdk->lookup('00000000000');
+        $sdk->lookup('999999999999');
     }
 
     public function testNotFoundStatusIsTreatedAsAnUnknownNumber(): void
     {
         $sdk = new E164($this->mockClient(new Response(404, [], 'not found')));
 
-        $this->expectException(InvalidPhoneNumberException::class);
-        $this->expectExceptionMessage('Invalid phone number: 999999999999');
+        $this->expectException(NumberNotFoundException::class);
+        $this->expectExceptionMessage('No record found for phone number: 999999999999');
 
         $sdk->lookup('999999999999');
+    }
+
+    public function testUnknownNumberCarriesTheNumberItLookedUp(): void
+    {
+        $sdk = new E164($this->mockClient($this->jsonResponse([])));
+
+        try {
+            $sdk->lookup('+44 (999) 999 9999');
+            $this->fail('Expected NumberNotFoundException');
+        } catch (NumberNotFoundException $e) {
+            $this->assertSame('449999999999', $e->getPhoneNumber());
+        }
+    }
+
+    public function testUnknownNumberIsStillCaughtAsAnInvalidPhoneNumber(): void
+    {
+        // BC: 3.0 threw InvalidPhoneNumberException for a number with no record.
+        // NumberNotFoundException extends it, so existing catch blocks still fire.
+        $sdk = new E164($this->mockClient($this->jsonResponse([])));
+
+        $this->expectException(InvalidPhoneNumberException::class);
+
+        $sdk->lookup('999999999999');
+    }
+
+    public function testUnknownNumberIsDistinguishableFromMalformedInput(): void
+    {
+        $sdk = new E164($this->mockClient($this->jsonResponse([])));
+
+        try {
+            $sdk->lookup('abc');
+            $this->fail('Expected InvalidPhoneNumberException');
+        } catch (NumberNotFoundException $e) {
+            $this->fail('Malformed input must not be reported as a missing record');
+        } catch (InvalidPhoneNumberException $e) {
+            $this->assertStringContainsString('no digits in input', $e->getMessage());
+        }
+    }
+
+    // --- Leading zero ----------------------------------------------------
+
+    /**
+     * @param string $number A number still carrying a trunk or access prefix.
+     */
+    #[DataProvider('leadingZeroNumbers')]
+    public function testLeadingZeroIsRejectedWithoutARequest(string $number): void
+    {
+        // A client that fails the test if it is ever called.
+        $client = $this->createMock(ClientInterface::class);
+        $client->expects($this->never())->method('sendRequest');
+
+        $sdk = new E164($client);
+
+        $this->expectException(InvalidPhoneNumberException::class);
+        $this->expectExceptionMessage('country codes never start with 0');
+
+        $sdk->lookup($number);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function leadingZeroNumbers(): array
+    {
+        return [
+            'international access code' => ['0044113910781'],
+            'with a plus' => ['+0044113910781'],
+            'spaced' => ['00 44 113 391 0781'],
+            'UK national trunk prefix' => ['0113 391 0781'],
+            'bare zero' => ['0'],
+        ];
+    }
+
+    public function testLeadingZeroIsNotReportedAsAMissingRecord(): void
+    {
+        // Regression: forwarded to the API these return no records, which used
+        // to surface as "no record found" -- pointing at the wrong problem.
+        $client = $this->createMock(ClientInterface::class);
+        $client->expects($this->never())->method('sendRequest');
+
+        $sdk = new E164($client);
+
+        try {
+            $sdk->lookup('0044113910781');
+            $this->fail('Expected InvalidPhoneNumberException');
+        } catch (NumberNotFoundException $e) {
+            $this->fail('A trunk prefix is a format error, not a missing record');
+        } catch (InvalidPhoneNumberException $e) {
+            $this->addToAssertionCount(1);
+        }
     }
 
     // --- Failure mapping -------------------------------------------------

@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Breaking Changes
+- `getCallingCode()` returns `?int` instead of `?string`, matching the JSON number the API
+  sends. `toArray()`, `get('calling_code')` and `json_encode()` have always reported it as
+  a number, so the same field read as two different types off one object, and
+  `getCallingCode() === 44` was false. This completes the string-to-int correction 3.0
+  applied to `getTotalLengthMin()`, `getTotalLengthMax()` and `getWeight()`; `calling_code`
+  was missed at the time. `LookupResult::__construct()`'s `$callingCode` parameter changes
+  type to match — code using the documented `LookupResult::fromArray()` is unaffected.
+- `InvalidPhoneNumberException` is no longer `final`, so `NumberNotFoundException` can
+  extend it.
+
+### Added
+- `NumberNotFoundException`, thrown when the number is well-formed but the API holds no
+  record for it. Previously this arrived as a plain `InvalidPhoneNumberException` reading
+  `Invalid phone number: 441133910781`, indistinguishable from genuinely malformed input
+  without matching on the message — so a gap in coverage looked like a bug in the caller.
+  It **extends `InvalidPhoneNumberException`**, so existing catch blocks keep working;
+  catch it first if you want to handle the two cases differently. `getPhoneNumber()`
+  returns the normalised digits that were looked up.
+
+### Changed
+- **A leading `0` is now rejected locally instead of being sent to the API.** Country
+  calling codes run from 1 to 999 and never begin with `0`, so a number still carrying a
+  national trunk prefix or an international access code — `0044113910781`, `0113 391 0781`
+  — cannot be in E.164 form. These were forwarded as-is, and the API's empty response
+  surfaced as "no record found", pointing the caller at missing data rather than at the
+  number they passed. They now raise `InvalidPhoneNumberException` naming the fix, before
+  any request is made.
+- An HTTP 404 from the API now maps to `NumberNotFoundException` rather than
+  `InvalidPhoneNumberException`.
+
+### Documentation
+- `lookupAll()` throws `NumberNotFoundException` when there are no matches rather than
+  returning an empty array. This was already enforced by its `non-empty-list` return type
+  but was not stated in the README.
+
 ## [3.0.0] - 2026-07-30
 
 ### Breaking Changes
