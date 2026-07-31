@@ -28,7 +28,7 @@ final class E164
      * Reported in the User-Agent when the installed version cannot be
      * determined, e.g. when the SDK is loaded without Composer's runtime.
      */
-    public const FALLBACK_VERSION = '3.0.0';
+    public const FALLBACK_VERSION = '4.0.0';
 
     private const DEFAULT_BASE_URL = 'https://e164.com/';
     private const PACKAGE_NAME = 'e164-com/e164-php-sdk';
@@ -130,25 +130,28 @@ final class E164
             throw new InvalidPhoneNumberException('Invalid phone number: no digits in input');
         }
 
+        // E.164 country codes run from 1 to 999, so a number that still carries a
+        // national trunk prefix or an international access code cannot be in E.164
+        // form. Left to the API it comes back with no records, which would surface
+        // as "no record found" and send the caller hunting for missing data rather
+        // than fixing the number they passed.
+        //
+        // Checked before the length limit: an access code pushes a valid number
+        // past 15 digits, and reporting that first names the wrong fix.
+        if (str_starts_with($digits, '0')) {
+            throw new InvalidPhoneNumberException(
+                'Invalid phone number: country codes never start with 0. Drop the '
+                . 'national trunk prefix or international access code '
+                . "(e.g. '00441133910781' should be '+441133910781')",
+            );
+        }
+
         if (strlen($digits) > self::MAX_DIGITS) {
             throw new InvalidPhoneNumberException(sprintf(
                 'Invalid phone number: %d digits exceeds the E.164 maximum of %d',
                 strlen($digits),
                 self::MAX_DIGITS,
             ));
-        }
-
-        // E.164 country codes run from 1 to 999, so a number that still carries a
-        // national trunk prefix or an international access code cannot be in E.164
-        // form. Left to the API it comes back with no records, which would surface
-        // as "no record found" and send the caller hunting for missing data rather
-        // than fixing the number they passed.
-        if (str_starts_with($digits, '0')) {
-            throw new InvalidPhoneNumberException(
-                'Invalid phone number: country codes never start with 0. Drop the '
-                . 'national trunk prefix or international access code '
-                . "(e.g. '0044113910781' should be '+44113910781')",
-            );
         }
 
         return $digits;

@@ -115,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Response object with getters for all API fields
 - Basic test suite
 
+[Unreleased]: https://github.com/e164-com/e164-php-sdk/compare/3.0.0...HEAD
 [3.0.0]: https://github.com/e164-com/e164-php-sdk/compare/2.1...3.0.0
 [2.1.0]: https://github.com/e164-com/e164-php-sdk/compare/2.0...2.1
 [2.0.0]: https://github.com/e164-com/e164-php-sdk/compare/1.0...2.0

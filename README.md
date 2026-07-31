@@ -121,8 +121,8 @@ never start with one, so a number still carrying a national trunk prefix or an
 international access code is not in E.164 form — strip it before calling:
 
 ```php
-$e164->lookup('0044113910781');   // InvalidPhoneNumberException
-$e164->lookup('+44113910781');    // correct
+$e164->lookup('00441133910781');  // InvalidPhoneNumberException
+$e164->lookup('+441133910781');   // correct
 ```
 
 ## Custom HTTP Client
@@ -215,7 +215,7 @@ is a find-and-replace:
 Then note these behaviour changes:
 
 - `Response` is now `LookupResult`, immutable, and built via `LookupResult::fromArray()` instead of setters.
-- `getTotalLengthMin()`, `getTotalLengthMax()` and `getWeight()` return `?int` instead of `?string`.
+- `getCallingCode()`, `getTotalLengthMin()`, `getTotalLengthMax()` and `getWeight()` return `?int` instead of `?string`.
 - A custom HTTP client is now typed as PSR-18 rather than `GuzzleHttp\ClientInterface`. Guzzle's own `Client` satisfies both, so injecting one still works.
 - Numbers over 15 digits are now rejected rather than sent to the API.
 

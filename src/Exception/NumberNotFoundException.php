@@ -16,7 +16,7 @@ namespace E164\Exception;
  * code written against 3.0 -- when both cases arrived as
  * InvalidPhoneNumberException -- continues to catch it.
  */
-class NumberNotFoundException extends InvalidPhoneNumberException
+final class NumberNotFoundException extends InvalidPhoneNumberException
 {
     /**
      * @param string $phoneNumber The normalised digits that produced no records.
